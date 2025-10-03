@@ -1,12 +1,14 @@
 # Dev Environment Access
 
-For gathering information about the running status of the software that you will be working on, you can access the following clusters. You can ssh on the deploy node and check the active and standby clusters (blue green deployment) using `cscfg cluster show`. user is `root`. So use `ssh root@<node-name-or-ip>`, and prefer heredoc /multi-level heredoc in the ssh command. use `$(pass show ssh/cb)` to retrieve the password. Also, to prevent `password` prompts, ensure you do `ssh` in a way that tty is empty, and also ensure that prompts are not there during execution.
+For gathering information about the running status of the software that you will be working on, you can access the following clusters. You can ssh on the deploy node and check the active and standby clusters (blue green deployment) using `cscfg cluster show`. user is `root`. So use `ssh -F /dev/null root@<node-ip>`, and prefer heredoc /multi-level heredoc in the ssh command. use `$(pass show ssh/cb)` to retrieve the password. Also, to prevent `password` prompts, ensure you do `ssh` in a way that tty is empty, and also ensure that prompts are not there during execution.
 
 ### Multibox-32 (aka MB-32)
 
-  - `mb32-cs-wse004-us-sr01`: `Deploy node` and `User node`
-  - `mb32-cs-wse001-mg-sr01`: Lead mgmt node of blue.
-  - `mb32-cs-wse003-mg-sr02`: Lead mgmt node of green.
+**Please do not access the nodes via names, it is slow / unreachable sometimes**.
+
+  - `mb32-cs-wse004-us-sr01`: `Deploy node` and `User node` (accessible via IP `172.28.216.27`)
+  - `mb32-cs-wse001-mg-sr01`: Lead mgmt node of blue. (accessible via IP `172.28.219.1`)
+  - `mb32-cs-wse003-mg-sr02`: Lead mgmt node of green. (accessible via IP `172.28.217.39`)
 
 ## Cluster bundles on deploy nodes
 - Deploy node `root@mb32-cs-wse001-mg-sr01` keeps staged artifacts under `/root/sayann/Cluster/`.
@@ -51,3 +53,37 @@ For gathering information about the running status of the software that you will
      Browse both endpoints to ensure new dashboards appear on green after `prepare-data`.
    - Document the exact manual checks and shut down any port-forward sessions when finished.
 
+
+## Real-cluster sanity checklist ( Grafana data copy )
+1. **Build fresh deploy package**
+   - From `src/cluster_deployment`: `make package`. Result appears under `~/Code/monolith/build/cluster-deploy-<tag>.tar.gz`.
+2. **Copy to deploy node**
+   - `scp -F /dev/null build/cluster-deploy-<tag>.tar.gz root@172.28.216.27:/root/sayann/Cluster/`
+3. **Unpack and install**
+   - On deploy node:
+     ```sh
+     tar -xzf cluster-deploy-<tag>.tar.gz
+     cp -a ./cluster-deploy-<tag>/deployment /opt/cerebras/cluster-deployment/deployment
+     cp -a ./cluster-deploy-<tag>/packages /opt/cerebras/cluster-deployment/packages
+     cp -a ./cluster-deploy-<tag>/etc /opt/cerebras/cluster-deployment/etc
+     ```
+     (back up `/opt/cerebras/cluster-deployment/deployment` first)
+4. **Stage upgrade**
+   - `cscfg cluster upgrade create --source multibox-32 --dest multibox-32-green --upgrade-pkg-path /root/sayann/Cluster`
+5. **Prepare data**
+   - `cscfg cluster upgrade prepare_data --upgrade-id <id>`
+6. **Port-forward Grafana for validation**
+   - Blue: `kubectl -n grafana-blue port-forward svc/grafana 3000:80 --address 0.0.0.0`
+   - Green: `kubectl -n grafana-green port-forward svc/grafana 3001:80 --address 0.0.0.0`
+   - Confirm dashboards copied after `prepare_data`.
+7. **Cleanup**
+   - Cancel upgrade, remove temp bundles, stop port-forwards.
+
+## Real-cluster sanity checklist (Grafana data sync)
+1. Build package: `make package` under `src/cluster_deployment` (archive lands in `~/Code/monolith/build/`).
+2. Copy `cluster-deploy-<tag>.tar.gz` to deploy node via `scp -F /dev/null`.
+3. On deploy node: backup `/opt/cerebras/cluster-deployment/deployment`, then unpack and `rsync` the new `deployment`, `packages`, `etc` into place.
+4. Run `cscfg cluster upgrade create --source multibox-32 --dest multibox-32-green --upgrade-pkg-path /root/sayann/Cluster`.
+5. Run `USE_POD_CEPH_SYNCER=true cscfg cluster upgrade prepare_data --upgrade-id <id>` (captures Grafana Ceph volumes).
+6. Port-forward `kubectl -n grafana-blue ...` and `kubectl -n grafana-green ...` to inspect dashboards.
+7. Cancel the upgrade and clean up `/tmp/ceph-sync-*` directories and port-forward sessions.
