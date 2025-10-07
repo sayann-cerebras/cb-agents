@@ -2,6 +2,24 @@
 
 For gathering information about the running status of the software that you will be working on, you can access the following clusters. You can ssh on the deploy node and check the active and standby clusters (blue green deployment) using `cscfg cluster show`. user is `root`. So use `ssh -F /dev/null root@<node-ip>`, and prefer heredoc /multi-level heredoc in the ssh command. use `$(pass show ssh/cb)` to retrieve the password. Also, to prevent `password` prompts, ensure you do `ssh` in a way that tty is empty, and also ensure that prompts are not there during execution.
 
+### SSH options
+
+The following ssh / scp command format works:
+
+```bash
+CB_PW=$(pass show ssh/cb) && sshpass -p "$CB_PW" ssh -F /dev/null -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@<IP> <<'EOF'
+  # your commands here
+EOF
+```
+
+### Surgically updating remote files before running commands
+
+To test local changes, the files under `/opt/cerebras/cluster-deployment` on the remote server can directly be updated using `cb-agents/scripts/sync_git_changes_to_remote.sh`.
+
+```bash
+CB_PW=$(pass show ssh/cb) && export SSHPASS="$CB_PW" && RSYNC_RSH="sshpass -e ssh -F /dev/null -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" cb-agents/scripts/sync_git_changes_to_remote.sh -n root@172.28.216.27
+```
+
 ### Multibox-32 (aka MB-32)
 
 **Please do not access the nodes via names, it is slow / unreachable sometimes**.
@@ -46,7 +64,7 @@ For gathering information about the running status of the software that you will
      ```
    - On the deploy node, unpack within `/root/sayann/Cluster/`, then run `cscfg cluster upgrade create` followed by `cscfg cluster upgrade prepare-data`.
    - For Grafana dashboard validation:
-     ```sh
+     ```bash
      kubectl -n grafana-blue port-forward svc/grafana 3000:80 --address 0.0.0.0
      kubectl -n grafana-green port-forward svc/grafana 3001:80 --address 0.0.0.0
      ```
@@ -71,7 +89,7 @@ For gathering information about the running status of the software that you will
 4. **Stage upgrade**
    - `cscfg cluster upgrade create --source multibox-32 --dest multibox-32-green --upgrade-pkg-path /root/sayann/Cluster`
 5. **Prepare data**
-   - `cscfg cluster upgrade prepare_data --upgrade-id <id>`
+   - `yes | cscfg cluster upgrade prepare_data --upgrade-id <id>`
 6. **Port-forward Grafana for validation**
    - Blue: `kubectl -n grafana-blue port-forward svc/grafana 3000:80 --address 0.0.0.0`
    - Green: `kubectl -n grafana-green port-forward svc/grafana 3001:80 --address 0.0.0.0`
