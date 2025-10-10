@@ -1,3 +1,7 @@
+# Guidelines
+
+- When adding type annotations, keep compatibility with the supported Python runtimes by importing container types from `typing` (e.g. `from typing import List, Dict`) instead of using the native `list`, `dict`, etc. generics introduced in newer Python releases.
+
 # Project Workflow
 
 The deployment code lives under `deployment_manager/`; CLI entry points are in `deployment_manager/cli`, shared helpers and database models sit in `deployment_manager/db`, and reusable tooling is in `tools/`. Integration and regression tests reside in `deployment_manager/tests`, while heavier Docker-backed suites live in `deployment_manager/tests_container` and protobuf scenarios in `deployment_manager/tests_pb3`. Support scripts and generated artefacts are collected in `bin/`, and review artifacts or agent notes (including this guide) live under `agnt/`.
@@ -12,4 +16,3 @@ gh pr comment --body $'test pre-q\ntest multibox-canary-deploy'
 ```
 
 For Jenkins-specific workflows, refer to [Jenkins ops notes](jenkins.md).
-
