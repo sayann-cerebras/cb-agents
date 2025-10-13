@@ -1,2 +1,6 @@
 logs/
 *.log
+*-docker-image-*
+__pycache__/
+**/*.tar
+
