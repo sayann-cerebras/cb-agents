@@ -9,9 +9,10 @@ cat "${md_files[@]}" > "$output_file"
 monolith_repo="$GITTOP"
 info_exclude="$monolith_repo/.git/info/exclude"
 host_rel_prefix="src/cluster_deployment/deployment"
-cat <<'EOF' >>"$info_exclude"
-$host_rel_prefix/AGENTS.md
-$host_rel_prefix/cb-agents/*
-
-EOF
+entries=("$host_rel_prefix/AGENTS.md" "$host_rel_prefix/cb-agents/*")
+for entry in "${entries[@]}"; do
+    if ! grep -Fxq "$entry" "$info_exclude" 2>/dev/null; then
+        echo "$entry" >>"$info_exclude"
+    fi
+done
 
