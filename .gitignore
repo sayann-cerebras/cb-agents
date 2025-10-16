@@ -3,4 +3,4 @@ logs/
 *-docker-image-*
 __pycache__/
 **/*.tar
-
+current_task.md
