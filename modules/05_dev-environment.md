@@ -28,6 +28,11 @@ CB_PW=$(pass show ssh/cb) && export SSHPASS="$CB_PW" && RSYNC_RSH="sshpass -e ss
   - `mb32-cs-wse001-mg-sr01`: Lead mgmt node of blue. (accessible via IP `172.28.219.1`)
   - `mb32-cs-wse003-mg-sr02`: Lead mgmt node of green. (accessible via IP `172.28.217.39`)
 
+## Database migrations
+- Always generate Django migrations with the provided tooling: from `src/cluster_deployment/deployment` run `make migrations` (this shells out to `venv/bin/python` automatically).  
+- Do **not** hand-write or copy migration files; if a change is needed, regenerate the migration via `make migrations` and commit the resulting file.
+- After editing any `cb-agents` content, run `./install.sh` from the repository root to regenerate `AGENTS.md`.
+
 ## Cluster bundles on deploy nodes
 - Deploy node `root@mb32-cs-wse001-mg-sr01` keeps staged artifacts under `/root/sayann/Cluster/`.
 - Extracting a top-level `Cluster-<ver>-<build>.tar.gz` yields several tarballs that map to build targets under `src/cluster_deployment`:
