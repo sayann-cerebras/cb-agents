@@ -22,3 +22,25 @@ gh pr comment --body $'test pre-q\ntest multibox-canary-deploy'
 ```
 
 For Jenkins-specific workflows, refer to [Jenkins ops notes](jenkins.md).
+
+## Version Control with Jujutsu + GitHub CLI
+
+- Treat Jujutsu (`jj`) as the primary tool for local history management. The repository is already colocated (`.jj/` alongside `.git/`); if you reclone, run `jj git init --colocate` from the repo root to re-establish the dual view.
+- Keep Git's view clean by ignoring `.jj/` locally (it lives in `.git/info/exclude`). Do not add `.jj/` to the shared `.gitignore`.
+- Daily loop:
+  1. `jj git fetch` to pull remote updates, then `jj git import` so new commits appear in your JJ graph.
+  2. Create or amend work with `jj new`, `jj commit`, `jj squash`, or `jj split` as needed. Use `jj status` (alias `jj st`) to inspect your stack.
+  3. Rebase or fold changes with `jj rebase`/`jj absorb`; resolve conflicts with `jj resolve` followed by `jj commit`.
+  4. When ready to surface work to Git, run `jj git export` (or `jj git push --export`) so Git sees updated commits. From there, push via `jj git push` or `git push` interchangeably.
+- Keep using the GitHub CLI for PR interactions (`gh pr create`, `gh pr view`, `gh pr comment`, etc.). JJ operates purely on the local history while `gh` handles server-side workflow.
+- For conflict-heavy rebases, `jj rebase -r @ --onto <target>` gives an interactive step-by-step conflict fixer. After resolving each file with your editor, mark it done via `jj resolve <path> --mark-resolved`.
+- If you need to sync Git-only operations (e.g., `git pull --rebase` you ran out of habit), follow up with `jj git import` to avoid divergent JJ and Git views.
+- Prefer difftastic for structural diffs: install `difft`, then enable it with `jj config set --user ui.diff.tool difftastic`. Running `jj diff --tool` or `jj show --tool` now launches difftastic; see [difftastic's JJ tips](https://difftastic.wilfred.me.uk/jj.html) for extra flags such as `--syntax-highlight=off`.
+- Configure your identity once for JJ so exported commits have correct metadata:
+  ```sh
+  jj config set --user user.name "Sayan Naskar"
+  jj config set --user user.email "sayan.naskar@cerebras.net"
+  ```
+- Useful aliases (add with `jj config edit --user`):
+  - `st = status --no-graph`
+  - `ls = log -r 'ancestors(@,3)' -T 'commit_id.short() \" \" change_id.short() \" \" description.first_line()'`

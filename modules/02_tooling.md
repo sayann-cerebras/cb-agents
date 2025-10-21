@@ -24,6 +24,7 @@
     - Pass comment IDs as numbers with `-F in_reply_to=<id>`; using the comment URL or attempting to PATCH the original comment will fail.
   + `gh run list --limit 5` — recent GitHub Actions jobs for the repo; pair with `--json` for details.
   + `gh run view <run-id> --log` — fetch logs for a specific Actions run.
+- `ast-grep`: structural search/replace. Quick probes: `ast-grep --lang python -p 'def $FUNC($ARGS): ...' deployment_manager/**/*.py`. For safe refactors, author YAML rewrites (see [transformation docs](https://ast-grep.github.io/reference/yaml/transformation.html)) and execute with `ast-grep -pfile rewrite.yaml --rewrite`.
 - `pandoc`: Convert HTML to plain text or Markdown (useful for Jenkins logs).
 
 The `sandbox` repo is cloned at the location `~/Code/sandbox`. Under the folder `~/Code/sandbox/sayan`, you can find analysis on various tickets.
